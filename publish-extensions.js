@@ -10,12 +10,13 @@
 
 // @ts-check
 const fs = require('fs');
-const ovsx = require('ovsx');
 const cp = require('child_process');
 const { getPublicGalleryAPI } = require('vsce/out/util');
 const { PublicGalleryAPI } = require('vsce/out/publicgalleryapi');
 const { ExtensionQueryFlags, PublishedExtension } = require('azure-devops-node-api/interfaces/GalleryInterfaces');
 const semver = require('semver');
+const resolveExtension = require('./lib/resolveExtension').resolveExtension;
+const exec = require('./lib/exec');
 
 const msGalleryApi = getPublicGalleryAPI();
 msGalleryApi.client['_allowRetries'] = true;
@@ -32,7 +33,6 @@ const flags = [
   ExtensionQueryFlags.IncludeVersions,
 ];
 
-
 (async () => {
   /**
    * @type {string[] | undefined}
@@ -41,6 +41,9 @@ const flags = [
   if (process.env.FAILED_EXTENSIONS) {
     toVerify = process.env.FAILED_EXTENSIONS.split(',').map(s => s.trim());
   }
+  /**
+   * @type {{extensions:Readonly<import('./types').Extension>[]}}
+   */
   const { extensions } = JSON.parse(await fs.promises.readFile('./extensions.json', 'utf-8'));
 
   // Also install extensions' devDependencies when using `npm install` or `yarn install`.
@@ -59,7 +62,7 @@ const flags = [
     failed: []
   }
   const msPublishers = new Set(['ms-python', 'ms-toolsai', 'ms-vscode', 'dbaeumer', 'GitHub', 'Tyriar', 'ms-azuretools', 'msjsdiag', 'ms-mssql', 'vscjava', 'ms-vsts']);
-  const monthAgo = new Date()
+  const monthAgo = new Date();
   monthAgo.setMonth(monthAgo.getMonth() - 1);
   for (const extension of extensions) {
     if (toVerify && toVerify.indexOf(extension.id) === -1) {
@@ -87,6 +90,9 @@ const flags = [
         stat.msPublished[extension.id] = { msInstalls, msVersion };
       }
 
+      /**
+       * @returns {Promise<{version: string | undefined, lastUpdated: Date | undefined}>}
+       */
       async function updateStat() {
         /** @type {[PromiseSettledResult<PublishedExtension | undefined>]} */
         const [openExtension] = await Promise.allSettled([openGalleryApi.getExtension(extension.id, flags)]);
@@ -127,20 +133,68 @@ const flags = [
             hit: typeof daysInBetween === 'number' && 0 < daysInBetween && daysInBetween <= 2
           }
         }
+        return { version: openVersion, lastUpdated: openLastUpdated };
       }
 
-      await updateStat();
+      const ovsxStat = await updateStat();
       if (stat.upToDate[extension.id] || stat.unstable[extension.id]) {
+        continue;
+      }
+
+      if (!extension.repository) {
+        throw `${extension.id}: repository not specified`;
+      }
+
+      await exec('rm -rf /tmp/repository /tmp/download');
+
+      const resolved = await resolveExtension(extension, msVersion && {
+        version: msVersion,
+        lastUpdated: msLastUpdated
+      });
+      /** @type {import('./types').PublishContext} */
+      const context = {
+        version: resolved?.version,
+        ovsxVersion: ovsxStat.version
+      };
+      // TODO(ak) incorporate into reporting
+      if (resolved?.release) {
+        console.log(`${extension.id}: resolved ${resolved.release.link} from release`);
+        context.file = resolved.release.file;
+      } else if (resolved?.releaseTag) {
+        console.log(`${extension.id}: resolved ${resolved.releaseTag} from release tag`);
+        context.ref = resolved.releaseTag;
+      } else if (resolved?.tag) {
+        console.log(`${extension.id}: resolved ${resolved.tag} from tags`);
+        context.ref = resolved.tag;
+      } else if (resolved?.latest) {
+        if (msVersion) {
+          // TODO(ak) report as not actively maintained
+          console.log(`${extension.id}: resolved ${resolved.latest} from the very latest commit, since it is not actively maintained`);
+        } else {
+          console.log(`${extension.id}: resolved ${resolved.latest} from the very latest commit, since it is not published to MS marketplace`);
+        }
+        context.ref = resolved.latest;
+      } else if (resolved?.matchedLatest) {
+        console.log(`${extension.id}: resolved ${resolved?.matchedLatest} from the very latest commit`);
+        context.ref = resolved.matchedLatest;
+      } else if (resolved?.matched) {
+        console.log(`${extension.id}: resolved ${resolved.matched} from the latest commit on the last update date`);
+        context.ref = resolved.matched;
+      } else {
+        throw `${extension.id}: failed to resolve`;
+      }
+
+      if (Boolean(process.env.DRY_RUN)) {
         continue;
       }
 
       let timeout;
       await new Promise((resolve, reject) => {
-        const p = cp.spawn(process.execPath, ['publish-extension.js', JSON.stringify(extension)], {
+        const p = cp.spawn(process.execPath, ['publish-extension.js', JSON.stringify({ extension, context })], {
           stdio: ['ignore', 'inherit', 'inherit'],
           cwd: process.cwd(),
           env: process.env
-        })
+        });
         p.on('error', reject);
         p.on('exit', code => {
           if (code) {
@@ -168,4 +222,5 @@ const flags = [
   }
 
   await fs.promises.writeFile("/tmp/stat.json", JSON.stringify(stat), { encoding: 'utf8' });
+  process.exit();
 })();

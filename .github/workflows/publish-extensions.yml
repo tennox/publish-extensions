@@ -30,6 +30,7 @@ jobs:
     - run: node publish-extensions
       env:
         OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - run: node report-extensions
     - uses: actions/upload-artifact@v2
       if: always()

@@ -39,7 +39,33 @@ export interface PublishStat {
         [id: string]: MSExtensionStat
     }
     hitMiss: {
-        [id: string]: (ExtensionStat | ExtensionStat) & { hit: boolean }
+        [id: string]: (ExtensionStat | ExtensionStat) & { hit: boolean }
     }
     failed: string[]
+}
+
+export interface Extension {
+    id: string,
+    repository?: string
+    location?: string
+    prepublish?: string
+    extensionFile?: string
+    timeout?: unknown
+}
+
+export interface ResolvedExtension {
+    version: string
+    release?: { file: string, link: string }
+    releaseTag?: string
+    tag?: string
+    latest?: string
+    matchedLatest?: string
+    matched?: string
+}
+
+export interface PublishContext {
+    version: string
+    ovsxVersion?: string
+    file?: string
+    ref?: string
 }
