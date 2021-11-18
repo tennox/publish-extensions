@@ -20,9 +20,7 @@
   "bin": "bin/publish-extensions",
   "main": "publish-extensions",
   "scripts": {
-    "add": "node add-extension",
-    "publish": "node publish-extensions",
-    "upgrade": "node upgrade-extensions"
+    "publish": "node publish-extensions"
   },
   "dependencies": {
     "download": "^8.0.0",
