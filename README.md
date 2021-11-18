@@ -19,7 +19,7 @@ In the long-run it is better for extension owners to publish their own plugins b
 
 ## How to Add an Extension?
 
-To automatically publish an extension to Open VSX, simply add it to [`extensions.json`](./extensions.json) with the [options described below](#publishing-options). You can run `node add-extension [REPOSITORY] --checkout` to create an entry automatically.
+To automatically publish an extension to Open VSX, simply add it to [`extensions.json`](./extensions.json) with the [options described below](#publishing-options). See [Publishing Options](#publishing-options) for a quick guide.
 
 ⚠️ Some extensions require additional build steps, and failing to execute them may lead to a broken extension published to Open VSX. Please check the extension's `scripts` section in the package.json file to find such steps; usually they are named `build` or similar. In case the build steps are included in the [vscode:prepublish](https://code.visualstudio.com/api/working-with-extensions/publishing-extension#prepublish-step) script, they are executed automatically, so it's not necessary to mention them explicitly. Otherwise, please include them in the `prepublish` value, e.g. `"prepublish": "npm run build"`.
 
