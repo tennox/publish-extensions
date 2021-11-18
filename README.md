@@ -34,8 +34,6 @@ The best way to add an extension here is to open this repository in Gitpod (usin
 Notes:
 - Simply replace `$REPOSITORY_URL` with the extension's actual repository URL
 
-If you're curious, here are the expected formats of an [`extensions.json`](./extensions.json) entry:
-
 ```js
     {
       // Unique Open VSX extension ID in the form "<namespace>.<name>"
