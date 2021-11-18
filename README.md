@@ -29,16 +29,10 @@ Click the button below to start a [Gitpod](https://gitpod.io) workspace where yo
 
 ## Publishing Options
 
-The best way to add an extension here is to open this repository in Gitpod (using the orange button above) and to run this helper script:
-
-```bash
-node add-extension $REPOSITORY_URL --checkout
-```
+The best way to add an extension here is to open this repository in Gitpod (using the orange button above) and add a new entry to `extensions.json`:
 
 Notes:
 - Simply replace `$REPOSITORY_URL` with the extension's actual repository URL
-- This will update `extensions.json` automatically, which you can commit to send a Pull Request
-- Adding `--checkout` (without an explicit value) will auto-detect the latest available Git release tag or branch
 
 If you're curious, here are the expected formats of an [`extensions.json`](./extensions.json) entry:
 
@@ -46,21 +40,7 @@ If you're curious, here are the expected formats of an [`extensions.json`](./ext
     {
       // Unique Open VSX extension ID in the form "<namespace>.<name>"
       "id": "rebornix.ruby",
-      // A full URL from which to download the extension package
-      "download": "https://github.com/rubyide/vscode-ruby/releases/download/v0.25.0/ruby-0.25.0.vsix",
-      // (RECOMMENDED) The version that should be published; the script compares this version with the latest published version
-      "version": "0.25.0"
-    },
-```
-
-Or, in cases where the extension maintainers don't provide a `.vsix` release to download, you can build the extension from source instead:
-
-
-```js
-    {
-      // Unique Open VSX extension ID in the form "<namespace>.<name>"
-      "id": "redhat.vscode-yaml",
-      // Repository URL to clone and publish from
+      // Repository URL to clone and publish from. If the extension publishes `.vsix` files as release artifacts, this will determine the repo to fetch the releases from.
       "repository": "https://github.com/redhat-developer/vscode-yaml"
     },
 ```
@@ -71,10 +51,8 @@ Here are all the supported values, including optional ones, to build extensions 
     {
       // Unique Open VSX extension ID in the form "<namespace>.<name>"
       "id": "rebornix.ruby",
-      // Repository URL to clone and publish from
+      // Repository URL to clone and publish from. If the extension publishes `.vsix` files as release artifacts, this will determine the repo to fetch the releases from.
       "repository": "https://github.com/rubyide/vscode-ruby",
-      // (RECOMMENDED) The version that should be published; the script compares this version with the latest published version
-      "version": "0.27.0",
       // (RECOMMENDED) The Git branch, tag, or commit to check out before publishing (defaults to the repository's default branch)
       "checkout": "v0.27.0",
       // (OPTIONAL) Location of the extension's package.json in the repository (defaults to the repository's root directory)
